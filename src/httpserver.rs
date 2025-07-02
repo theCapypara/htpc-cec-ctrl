@@ -12,7 +12,7 @@ use std::sync::Arc;
 use system_shutdown::shutdown;
 use tokio::net::TcpListener;
 
-const METHOD: Method = Method::GET;
+const METHOD: Method = Method::POST;
 const TV: CecLogicalAddress = CecLogicalAddress::Tv;
 
 async fn service(
