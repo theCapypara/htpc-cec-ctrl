@@ -67,9 +67,9 @@
             };
 
             Service = {
-              ExecStartPre = "${self.packages.htpc-cec-ctrl}/bin/htpc-cec-ctrl unrestrict-cpu";
-              ExecStart = "${self.packages.htpc-cec-ctrl}/bin/htpc-cec-ctrl";
-              ExecStopPost = "${self.packages.htpc-cec-ctrl}/bin/htpc-cec-ctrl unrestrict-cpu";
+              ExecStartPre = "${self.packages.${pkgs.system}.htpc-cec-ctrl}/bin/htpc-cec-ctrl unrestrict-cpu";
+              ExecStart = "${self.packages.${pkgs.system}.htpc-cec-ctrl}/bin/htpc-cec-ctrl";
+              ExecStopPost = "${self.packages.${pkgs.system}.htpc-cec-ctrl}/bin/htpc-cec-ctrl unrestrict-cpu";
               Restart = "always";
               RestartSec = 30;
               Environment = "RUST_LOG=htpc_cec_ctrl=info";
