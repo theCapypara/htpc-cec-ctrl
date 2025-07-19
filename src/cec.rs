@@ -1,10 +1,11 @@
+use crate::cgroup::{user_slice_limit_cpu, user_slice_unlimit_cpu};
 use crate::input::{Input, KEY_AUX_MENU, KEY_MAIN_MENU};
 use cec_rs::{
     CecCommand, CecConnection, CecConnectionCfgBuilder, CecDeviceType, CecDeviceTypeVec,
-    CecKeypress, CecLogMessage, CecOpcode, CecUserControlCode,
+    CecKeypress, CecLogMessage, CecLogicalAddress, CecOpcode, CecUserControlCode,
 };
 use evdev::{AbsoluteAxisCode, KeyCode};
-use log::{debug, error, trace};
+use log::{debug, error, info, trace};
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -91,17 +92,32 @@ fn on_command_received(command: CecCommand, input: Arc<Input>) {
         command.opcode, command.initiator
     );
 
-    if command.opcode == CecOpcode::Play {
-        let input_key = KeyCode::KEY_PLAYPAUSE;
-        let duration = Duration::from_millis(16);
-        match input.press_and_release(input_key, duration) {
-            Ok(_) => debug!("pressed {:?} for {:?}", input_key, duration),
-            Err(err) => error!("failed pressing {input_key:?}: {err:?}"),
+    match command.opcode {
+        CecOpcode::RequestActiveSource => {
+            if command.initiator == CecLogicalAddress::Tv {
+                info!("TV came online, unrestricting CPU");
+                user_slice_unlimit_cpu().ok();
+            }
         }
+        CecOpcode::Standby => {
+            if command.initiator == CecLogicalAddress::Tv {
+                info!("TV came offline, restricting CPU");
+                user_slice_limit_cpu().ok();
+            }
+        }
+        CecOpcode::Play => {
+            let input_key = KeyCode::KEY_PLAYPAUSE;
+            let duration = Duration::from_millis(16);
+            match input.press_and_release(input_key, duration) {
+                Ok(_) => debug!("pressed {:?} for {:?}", input_key, duration),
+                Err(err) => error!("failed pressing {input_key:?}: {err:?}"),
+            }
+        }
+        _ => {}
     }
 }
 
-fn on_log_level(log_message: CecLogMessage) {
+fn on_log_message(log_message: CecLogMessage) {
     trace!(
         "logMessageRecieved:  time: {}, level: {}, message: {}",
         log_message.time.as_secs(),
@@ -118,7 +134,7 @@ pub fn run_cec(input: Input) -> CecConnection {
         .device_name(hostname::get().unwrap().to_string_lossy().to_string())
         .key_press_callback(Box::new(move |p| on_key_press(p, input.clone())))
         .command_received_callback(Box::new(move |p| on_command_received(p, input2.clone())))
-        .log_message_callback(Box::new(on_log_level))
+        .log_message_callback(Box::new(on_log_message))
         .device_types(CecDeviceTypeVec::new(CecDeviceType::RecordingDevice))
         .build()
         .unwrap();
