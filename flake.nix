@@ -2,7 +2,7 @@
   description = "htpc-cec-ctrl";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
     systems.url = "github:nix-systems/default";
   };
@@ -55,6 +55,9 @@
         };
       homeModules.default =
         { pkgs, ... }:
+        let
+          system = pkgs.stdenv.hostPlatform.system;
+        in
         {
           systemd.user.services.htpc-cec-ctrl = {
             Unit = {
@@ -67,9 +70,9 @@
             };
 
             Service = {
-              ExecStartPre = "${self.packages.${pkgs.system}.htpc-cec-ctrl}/bin/htpc-cec-ctrl unrestrict-cpu";
-              ExecStart = "${self.packages.${pkgs.system}.htpc-cec-ctrl}/bin/htpc-cec-ctrl";
-              ExecStopPost = "${self.packages.${pkgs.system}.htpc-cec-ctrl}/bin/htpc-cec-ctrl unrestrict-cpu";
+              ExecStartPre = "${self.packages.${system}.htpc-cec-ctrl}/bin/htpc-cec-ctrl unrestrict-cpu";
+              ExecStart = "${self.packages.${system}.htpc-cec-ctrl}/bin/htpc-cec-ctrl";
+              ExecStopPost = "${self.packages.${system}.htpc-cec-ctrl}/bin/htpc-cec-ctrl unrestrict-cpu";
               Restart = "always";
               RestartSec = 30;
               Environment = "RUST_LOG=htpc_cec_ctrl=info";
